@@ -349,6 +349,7 @@ import {
 } from '../custom-integration'
 import { updateStore } from '../../ui/lib/update-store'
 import { BypassReasonType } from '../../ui/secret-scanning/bypass-push-protection-dialog'
+import { IMenuItem } from '../menu-item'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -616,6 +617,9 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private commitMessageGenerationButtonClicked: boolean = false
 
   private showChangesFilter: boolean = false
+
+  private useNativeContextMenu: boolean = false
+  private contextMenuItems: ReadonlyArray<IMenuItem> = []
 
   public constructor(
     private readonly gitHubUserStore: GitHubUserStore,
@@ -1114,6 +1118,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
       commitMessageGenerationButtonClicked:
         this.commitMessageGenerationButtonClicked,
       showChangesFilter: this.showChangesFilter,
+      useNativeContextMenu: this.useNativeContextMenu,
+      contextMenuItems: this.contextMenuItems,
     }
   }
 
@@ -8424,6 +8430,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.updateMenuLabelsForSelectedRepository()
     this.emitUpdate()
   }
+
+  public _showContextualMenu() {}
 }
 
 /**

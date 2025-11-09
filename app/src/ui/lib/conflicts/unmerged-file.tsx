@@ -429,9 +429,9 @@ const makeMarkerConflictDropdownClickHandler = (
       ),
     ]
     setIsFileResolutionOptionsMenuOpen(true)
-    showContextualMenu(items).then(() => {
+    showContextualMenu(items) /*.then(() => {
       setIsFileResolutionOptionsMenuOpen(false)
-    })
+    })*/
   }
 }
 

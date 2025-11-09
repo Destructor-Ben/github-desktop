@@ -76,7 +76,29 @@ export function getPlatformSpecificNameOrSymbolForModifier(
 }
 
 /** Show the given menu items in a contextual menu. */
-export async function showContextualMenu(
+// TODO: move this function specifically to the dispatcher/app-store since it can access state more easily there
+// - then make it call the native one in here, OR set state for the apps renderer to make a non-native context menu
+export function showContextualMenu(
+  items: ReadonlyArray<IMenuItem>,
+  addSpellCheckMenu = false,
+  useNativeContextMenu = true,
+  onMenuClosed: undefined | (() => undefined) = undefined
+) {
+  if (useNativeContextMenu) {
+    showNativeContextualMenu(items, addSpellCheckMenu).then(() => {
+      if (onMenuClosed) onMenuClosed()
+    })
+    return
+  }
+
+  // Set app state
+
+  // TODO: set state that will cause a context menu to be rendered
+  // TODO: also need an option for whether native context menus are used
+  // - also make sure the onclick is handled
+}
+
+async function showNativeContextualMenu(
   items: ReadonlyArray<IMenuItem>,
   addSpellCheckMenu = false
 ) {

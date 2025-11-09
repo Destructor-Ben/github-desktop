@@ -4052,4 +4052,8 @@ export class Dispatcher {
   public toggleChangesFilterVisibility() {
     this.appStore._toggleChangesFilterVisibility()
   }
+
+  public showContextualMenu() {
+    this.appStore._showContextualMenu()
+  }
 }

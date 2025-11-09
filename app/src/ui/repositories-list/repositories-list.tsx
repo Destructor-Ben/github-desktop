@@ -427,9 +427,11 @@ export class RepositoriesList extends React.Component<
     ]
 
     this.setState({ newRepositoryMenuExpanded: true })
-    showContextualMenu(items).then(() => {
+    showContextualMenu(items, onMenuClosed: () => {
+      
+    }) /*.then(() => {
       this.setState({ newRepositoryMenuExpanded: false })
-    })
+    })*/
   }
 
   private onCloneRepository = () => {

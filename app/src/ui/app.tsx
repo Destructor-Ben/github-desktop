@@ -2818,6 +2818,10 @@ export class App extends React.Component<IAppProps, IAppState> {
     return <FullScreenInfo windowState={this.state.windowState} />
   }
 
+  private renderContextMenu() {
+    return <div>Test</div>
+  }
+
   private onConfirmDiscardChangesChanged = (value: boolean) => {
     this.props.dispatcher.setConfirmDiscardChangesSetting(value)
   }
@@ -3490,6 +3494,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           : this.renderApp()}
         {this.renderZoomInfo()}
         {this.renderFullScreenInfo()}
+        {this.renderContextMenu()}
       </div>
     )
   }

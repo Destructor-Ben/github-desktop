@@ -51,6 +51,7 @@ import { IAPIRepoRuleset } from './api'
 import { ICustomIntegration } from './custom-integration'
 import { Emoji } from './emoji'
 import { IUpdateState } from '../ui/lib/update-store'
+import { IMenuItem } from './menu-item'
 
 export enum SelectionType {
   Repository,
@@ -381,6 +382,12 @@ export interface IAppState {
 
   /** Whether the changes filter is shown */
   readonly showChangesFilter: boolean
+
+  /** Whether native context menus are used */
+  readonly useNativeContextMenu: boolean
+
+  /** The non-native context menu items, or null if no non-native context menu should be shown */
+  readonly contextMenuItems: ReadonlyArray<IMenuItem> | null
 }
 
 export enum FoldoutType {
