@@ -349,6 +349,7 @@ import {
 } from '../custom-integration'
 import { updateStore } from '../../ui/lib/update-store'
 import { BypassReasonType } from '../../ui/secret-scanning/bypass-push-protection-dialog'
+import { RepositoryGroup } from '../../models/repository-group'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -360,6 +361,7 @@ const RecentRepositoriesKey = 'recently-selected-repositories'
 const RecentRepositoriesLength = 3
 
 const PinnedRepositoriesKey = 'pinned-repositories'
+const RepositoryGroupsKey = 'user-repository-groups'
 
 const defaultSidebarWidth: number = 250
 const sidebarWidthConfigKey: string = 'sidebar-width'
@@ -471,6 +473,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
   private repositories: ReadonlyArray<Repository> = new Array<Repository>()
   private recentRepositories: ReadonlyArray<number> = new Array<number>()
   private pinnedRepositories: ReadonlyArray<number> = new Array<number>()
+  private repositoryGroups: ReadonlyArray<RepositoryGroup> =
+    new Array<RepositoryGroup>()
 
   private selectedRepository: Repository | CloningRepository | null = null
 
@@ -1039,6 +1043,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       repositories,
       recentRepositories: this.recentRepositories,
       pinnedRepositories: this.pinnedRepositories,
+      repositoryGroups: this.repositoryGroups,
       localRepositoryStateLookup: this.localRepositoryStateLookup,
       windowState: this.windowState,
       windowZoomFactor: this.windowZoomFactor,
@@ -2364,6 +2369,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.updateMenuLabelsForSelectedRepository()
 
     this.pinnedRepositories = getNumberArray(PinnedRepositoriesKey)
+    this.repositoryGroups = getObject(RepositoryGroupsKey) ?? []
   }
 
   /**
@@ -6417,6 +6423,63 @@ export class AppStore extends TypedBaseStore<IAppState> {
     )
 
     setNumberArray(PinnedRepositoriesKey, this.pinnedRepositories)
+    this.emitUpdate()
+  }
+
+  public async _createRepositoryGroup(
+    repository: Repository,
+    groupName: string
+  ) {
+    const existingGroup = this.repositoryGroups.find(g => g.name === groupName)
+    if (existingGroup) {
+      return
+    }
+
+    const group = { name: groupName, repositories: [repository.id] }
+    this.repositoryGroups = this.repositoryGroups.concat([group])
+
+    setObject(RepositoryGroupsKey, this.repositoryGroups)
+    this.emitUpdate()
+  }
+
+  public async _addRepositoryToGroup(
+    repository: Repository,
+    groupName: string
+  ) {
+    const group = this.repositoryGroups.find(g => g.name === groupName)
+    if (!group) {
+      return
+    }
+
+    if (group.repositories.includes(repository.id)) {
+      return
+    }
+
+    group.repositories.push(repository.id)
+
+    setObject(RepositoryGroupsKey, this.repositoryGroups)
+    this.emitUpdate()
+  }
+
+  public async _removeRepositoryFromGroup(
+    repository: Repository,
+    groupName: string
+  ) {
+    const group = this.repositoryGroups.find(g => g.name === groupName)
+    if (!group) {
+      return
+    }
+
+    if (!group.repositories.includes(repository.id)) {
+      return
+    }
+
+    group.repositories = group.repositories.filter(r => r !== repository.id)
+    if (group.repositories.length === 0) {
+      this.repositoryGroups = this.repositoryGroups.filter(g => g !== group)
+    }
+
+    setObject(RepositoryGroupsKey, this.repositoryGroups)
     this.emitUpdate()
   }
 

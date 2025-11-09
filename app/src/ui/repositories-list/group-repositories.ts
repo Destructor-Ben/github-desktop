@@ -14,6 +14,7 @@ import { assertNever } from '../../lib/fatal-error'
 import { isDotCom } from '../../lib/endpoint-capabilities'
 import { Owner } from '../../models/owner'
 import { enableMultipleEnterpriseAccounts } from '../../lib/feature-flag'
+import { RepositoryGroup } from '../../models/repository-group'
 
 export type RepositoryListGroup =
   | {
@@ -26,6 +27,10 @@ export type RepositoryListGroup =
   | {
       kind: 'enterprise'
       host: string
+    }
+  | {
+      kind: 'user-group'
+      name: string
     }
 
 /**
@@ -40,14 +45,16 @@ export const getGroupKey = (group: RepositoryListGroup) => {
       return `0:pinned`
     case 'recent':
       return `1:recent`
+    case 'user-group':
+      return `2:user-group:${group.name}`
     case 'dotcom':
-      return `2:dotcom:${group.owner.login}`
+      return `3:dotcom:${group.owner.login}`
     case 'enterprise':
       return enableMultipleEnterpriseAccounts()
-        ? `3:enterprise:${group.host}`
-        : `3:enterprise`
+        ? `4:enterprise:${group.host}`
+        : `4:enterprise`
     case 'other':
-      return `4:other`
+      return `5:other`
     default:
       assertNever(group, `Unknown repository group kind ${kind}`)
   }
@@ -61,6 +68,7 @@ export interface IRepositoryListItem extends IFilterListItem {
   readonly needsDisambiguation: boolean
   readonly aheadBehind: IAheadBehind | null
   readonly changedFilesCount: number
+  readonly userGroup: string | null
 }
 
 const recentRepositoriesThreshold = 7
@@ -83,7 +91,8 @@ export function groupRepositories(
   repositories: ReadonlyArray<Repositoryish>,
   localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
   recentRepositories: ReadonlyArray<number>,
-  pinnedRepositories: ReadonlyArray<number>
+  pinnedRepositories: ReadonlyArray<number>,
+  userGroups: ReadonlyArray<RepositoryGroup>
 ): ReadonlyArray<IFilterListGroup<IRepositoryListItem, RepositoryListGroup>> {
   const includeRecentGroup = repositories.length > recentRepositoriesThreshold
   const recentSet = includeRecentGroup ? new Set(recentRepositories) : undefined
@@ -108,6 +117,15 @@ export function groupRepositories(
 
     if (pinnedSet.has(repo.id) && repo instanceof Repository) {
       addToGroup({ kind: 'pinned' }, repo)
+    }
+
+    for (const userGroup of userGroups) {
+      if (
+        userGroup.repositories.includes(repo.id) &&
+        repo instanceof Repository
+      ) {
+        addToGroup({ kind: 'user-group', name: userGroup.name }, repo)
+      }
     }
 
     addToGroup(getGroupForRepository(repo), repo)
@@ -141,11 +159,13 @@ const toSortedListItems = (
   const allNames = new Map<string, number>()
 
   for (const groupItem of groups.values()) {
-    // All items in the recent or pinned group are by definition present in another
-    // group and therefore we don't want to count them.
+    // All items in the recent, pinned, or 'user group' group are by
+    // definition present in another group and therefore we don't want to count
+    // them.
     if (
       groupItem.group.kind === 'recent' ||
-      groupItem.group.kind === 'pinned'
+      groupItem.group.kind === 'pinned' ||
+      groupItem.group.kind === 'user-group'
     ) {
       continue
     }
@@ -167,16 +187,19 @@ const toSortedListItems = (
         text: r instanceof Repository ? [title, nameOf(r)] : [title],
         id: r.id.toString(),
         repository: r,
+        userGroup: group.kind === 'user-group' ? group.name : null,
         needsDisambiguation:
           // If the repository is in the enterprise group and has a duplicate
           // name in the group, we need to disambiguate it. We don't have to
           // disambiguate repositories in the 'dotcom' group because they are
-          // already grouped by owner. If the repository is in the 'recent'
-          // or 'pinned' group and has a duplicate name in any group, we need
-          // to disambiguate it.
+          // already grouped by owner. If the repository is in the 'recent',
+          // 'pinned', or 'group' group and has a duplicate name in any group,
+          // we need to disambiguate it.
           ((groupNames.get(title) ?? 0) > 1 && group.kind === 'enterprise') ||
           ((allNames.get(title) ?? 0) > 1 &&
-            (group.kind === 'recent' || group.kind === 'pinned')),
+            (group.kind === 'recent' ||
+              group.kind === 'pinned' ||
+              group.kind === 'user-group')),
         aheadBehind: repoState?.aheadBehind ?? null,
         changedFilesCount: repoState?.changedFilesCount ?? 0,
       }

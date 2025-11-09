@@ -27,6 +27,7 @@ import { SectionFilterList } from '../lib/section-filter-list'
 import { assertNever } from '../../lib/fatal-error'
 import { enableMultipleEnterpriseAccounts } from '../../lib/feature-flag'
 import { IAheadBehind } from '../../models/branch'
+import { RepositoryGroup } from '../../models/repository-group'
 
 const BlankSlateImage = encodePathAsUrl(__dirname, 'static/empty-no-repo.svg')
 
@@ -35,6 +36,7 @@ interface IRepositoriesListProps {
   readonly repositories: ReadonlyArray<Repositoryish>
   readonly recentRepositories: ReadonlyArray<number>
   readonly pinnedRepositories: ReadonlyArray<number>
+  readonly repositoryGroups: ReadonlyArray<RepositoryGroup>
 
   /** A cache of the latest repository state values, keyed by the repository id */
   readonly localRepositoryStateLookup: ReadonlyMap<
@@ -59,6 +61,9 @@ interface IRepositoriesListProps {
 
   /** Called when the repository should be unpinned. */
   readonly onUnpinRepository: (repository: Repositoryish) => void
+
+  readonly onAddToGroup: (repository: Repositoryish) => void
+  readonly onRemoveFromGroup: (repository: Repositoryish, group: string) => void
 
   /** Called when the repository should be opened on GitHub in the default web browser. */
   readonly onViewOnGitHub: (repository: Repositoryish) => void
@@ -130,7 +135,8 @@ export class RepositoriesList extends React.Component<
       repositories: ReadonlyArray<Repositoryish> | null,
       localRepositoryStateLookup: ReadonlyMap<number, ILocalRepositoryState>,
       recentRepositories: ReadonlyArray<number>,
-      pinnedRepositories: ReadonlyArray<number>
+      pinnedRepositories: ReadonlyArray<number>,
+      userGroups: ReadonlyArray<RepositoryGroup>
     ) =>
       repositories === null
         ? []
@@ -138,7 +144,8 @@ export class RepositoriesList extends React.Component<
             repositories,
             localRepositoryStateLookup,
             recentRepositories,
-            pinnedRepositories
+            pinnedRepositories,
+            userGroups
           )
   )
 
@@ -161,6 +168,8 @@ export class RepositoriesList extends React.Component<
       selectedItem: null,
     }
   }
+
+  // BEN: make repository groups/headings collapsible
 
   private getRenderItem(
     groups: ReadonlyArray<
@@ -277,6 +286,8 @@ export class RepositoriesList extends React.Component<
       return 'Recent'
     } else if (kind === 'pinned') {
       return 'Pinned'
+    } else if (kind === 'user-group') {
+      return group.name
     } else {
       assertNever(kind, `Unknown repository group kind ${kind}`)
     }
@@ -328,6 +339,9 @@ export class RepositoriesList extends React.Component<
       onPinRepository: this.props.onPinRepository,
       onUnpinRepository: this.props.onUnpinRepository,
       pinnedRepositories: this.props.pinnedRepositories,
+      onAddToGroup: this.props.onAddToGroup,
+      onRemoveFromGroup: this.props.onRemoveFromGroup,
+      currentItemGroup: item.userGroup,
       repository: item.repository,
       shellLabel: this.props.shellLabel,
     })
@@ -350,7 +364,8 @@ export class RepositoriesList extends React.Component<
       this.props.repositories,
       this.props.localRepositoryStateLookup,
       this.props.recentRepositories,
-      this.props.pinnedRepositories
+      this.props.pinnedRepositories,
+      this.props.repositoryGroups
     )
 
     // So there's two types of selection at play here. There's the repository

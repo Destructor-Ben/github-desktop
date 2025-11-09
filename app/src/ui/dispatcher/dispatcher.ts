@@ -227,6 +227,36 @@ export class Dispatcher {
     return this.appStore._unpinRepository(repository)
   }
 
+  /**
+   * Creates the given repository group and adds the specified repository to it.
+   */
+  public async createRepositoryGroup(
+    repository: Repository,
+    group: string
+  ): Promise<void> {
+    return this.appStore._createRepositoryGroup(repository, group)
+  }
+
+  /**
+   * Add the given repository to the specified user group.
+   */
+  public async addRepositoryToGroup(
+    repository: Repository,
+    group: string
+  ): Promise<void> {
+    return this.appStore._addRepositoryToGroup(repository, group)
+  }
+
+  /**
+   * Remove the given repository from the specified user group.
+   */
+  public async removeRepositoryFromGroup(
+    repository: Repository,
+    group: string
+  ): Promise<void> {
+    return this.appStore._removeRepositoryFromGroup(repository, group)
+  }
+
   /** Update the repository's `missing` flag. */
   public async updateRepositoryMissing(
     repository: Repository,

@@ -198,6 +198,8 @@ import {
   BypassReason,
   BypassReasonType,
 } from './secret-scanning/bypass-push-protection-dialog'
+import { AddRepositoryToGroup } from './repository-groups/add-repository-to-group'
+import { CreateRepositoryGroup } from './repository-groups/create-repository-group'
 
 const MinuteInMilliseconds = 1000 * 60
 const HourInMilliseconds = MinuteInMilliseconds * 60
@@ -1246,6 +1248,30 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
 
     this.props.dispatcher.unpinRepository(repository)
+  }
+
+  private addRepositoryToGroup = (
+    repository: Repository | CloningRepository | null
+  ) => {
+    if (!repository || repository instanceof CloningRepository) {
+      return
+    }
+
+    this.props.dispatcher.showPopup({
+      type: PopupType.AddRepositoryToGroup,
+      repository,
+    })
+  }
+
+  private removeRepositoryFromGroup = (
+    repository: Repository | CloningRepository | null,
+    group: string
+  ) => {
+    if (!repository || repository instanceof CloningRepository) {
+      return
+    }
+
+    this.props.dispatcher.removeRepositoryFromGroup(repository, group)
   }
 
   private onConfirmRepoRemoval = async (
@@ -2592,6 +2618,26 @@ export class App extends React.Component<IAppProps, IAppState> {
           />
         )
       }
+      case PopupType.AddRepositoryToGroup: {
+        return (
+          <AddRepositoryToGroup
+            dispatcher={this.props.dispatcher}
+            onDismissed={onPopupDismissedFn}
+            repository={popup.repository}
+            groups={this.state.repositoryGroups.map(g => g.name)}
+          />
+        )
+      }
+      case PopupType.CreateRepositoryGroup: {
+        return (
+          <CreateRepositoryGroup
+            dispatcher={this.props.dispatcher}
+            onDismissed={onPopupDismissedFn}
+            repository={popup.repository}
+            groups={this.state.repositoryGroups.map(g => g.name)}
+          />
+        )
+      }
       default:
         return assertNever(popup, `Unknown popup type: ${popup}`)
     }
@@ -2897,6 +2943,7 @@ export class App extends React.Component<IAppProps, IAppState> {
         repositories={this.state.repositories}
         recentRepositories={this.state.recentRepositories}
         pinnedRepositories={this.state.pinnedRepositories}
+        repositoryGroups={this.state.repositoryGroups}
         localRepositoryStateLookup={this.state.localRepositoryStateLookup}
         askForConfirmationOnRemoveRepository={
           this.state.askForConfirmationOnRepositoryRemoval
@@ -2904,6 +2951,8 @@ export class App extends React.Component<IAppProps, IAppState> {
         onRemoveRepository={this.removeRepository}
         onPinRepository={this.pinRepository}
         onUnpinRepository={this.unpinRepository}
+        onAddToGroup={this.addRepositoryToGroup}
+        onRemoveFromGroup={this.removeRepositoryFromGroup}
         onViewOnGitHub={this.viewOnGitHub}
         onOpenInShell={this.openInShell}
         onShowRepository={this.showRepository}
@@ -3083,6 +3132,9 @@ export class App extends React.Component<IAppProps, IAppState> {
       pinnedRepositories: this.state.pinnedRepositories,
       onPinRepository: this.pinRepository,
       onUnpinRepository: this.unpinRepository,
+      currentItemGroup: null,
+      onAddToGroup: this.addRepositoryToGroup,
+      onRemoveFromGroup: this.removeRepositoryFromGroup,
       repository: repository,
       shellLabel: this.state.useCustomShell
         ? undefined

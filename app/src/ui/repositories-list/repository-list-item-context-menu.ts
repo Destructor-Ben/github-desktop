@@ -14,6 +14,7 @@ interface IRepositoryListItemContextMenuConfig {
   externalEditorLabel: string | undefined
   askForConfirmationOnRemoveRepository: boolean
   pinnedRepositories: ReadonlyArray<number>
+  currentItemGroup: string | null
   onViewOnGitHub: (repository: Repositoryish) => void
   onOpenInShell: (repository: Repositoryish) => void
   onShowRepository: (repository: Repositoryish) => void
@@ -23,6 +24,8 @@ interface IRepositoryListItemContextMenuConfig {
   onRemoveRepositoryAlias: (repository: Repository) => void
   onPinRepository: (repository: Repositoryish) => void
   onUnpinRepository: (repository: Repositoryish) => void
+  onAddToGroup: (repository: Repositoryish) => void
+  onRemoveFromGroup: (repository: Repositoryish, group: string) => void
 }
 
 export const generateRepositoryListContextMenu = (
@@ -41,6 +44,8 @@ export const generateRepositoryListContextMenu = (
 
   const items: ReadonlyArray<IMenuItem> = [
     ...buildPinMenuItem(config),
+    ...buildGroupMenuItems(config),
+    { type: 'separator' },
     ...buildAliasMenuItems(config),
     {
       label: __DARWIN__ ? 'Copy Repo Name' : 'Copy repo name',
@@ -110,6 +115,34 @@ const buildPinMenuItem = (
   }
 
   return [item]
+}
+
+const buildGroupMenuItems = (
+  config: IRepositoryListItemContextMenuConfig
+): ReadonlyArray<IMenuItem> => {
+  const { repository } = config
+
+  if (!(repository instanceof Repository)) {
+    return []
+  }
+
+  const showRemoveFromGroup = config.currentItemGroup !== null
+
+  const addToGroupItem = {
+    label: __DARWIN__ ? 'Add To Group' : 'Add to group',
+    action: () => config.onAddToGroup(repository),
+  }
+
+  const removeFromGroupItem = {
+    // BEN: make this remove from the group it was found in and only show if its in a group
+    label: __DARWIN__ ? 'Remove From This Group' : 'Remove from this group',
+    action: () =>
+      config.onRemoveFromGroup(repository, config.currentItemGroup ?? ''),
+  }
+
+  if (showRemoveFromGroup) return [addToGroupItem, removeFromGroupItem]
+
+  return [addToGroupItem]
 }
 
 const buildAliasMenuItems = (

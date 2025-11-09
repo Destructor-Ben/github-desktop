@@ -51,6 +51,7 @@ import { IAPIRepoRuleset } from './api'
 import { ICustomIntegration } from './custom-integration'
 import { Emoji } from './emoji'
 import { IUpdateState } from '../ui/lib/update-store'
+import { RepositoryGroup } from '../models/repository-group'
 
 export enum SelectionType {
   Repository,
@@ -88,6 +89,11 @@ export interface IAppState {
    * List of IDs of the pinned repositories
    */
   readonly pinnedRepositories: ReadonlyArray<number>
+
+  /**
+   * List of repository groups held by the app
+   */
+  readonly repositoryGroups: ReadonlyArray<RepositoryGroup>
 
   /**
    * A cache of the latest repository state values, keyed by the repository id
